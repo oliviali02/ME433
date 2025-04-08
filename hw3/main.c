@@ -36,7 +36,7 @@ int main()
     adc_select_input(0); // select to read from ADC0
 
     while (1) {
-        printf("Enter how many analog samples to take (0 - 100): ");
+        printf("Enter how many analog samples to take (0 - 100): \r\n");
         int num;
         scanf("%d", &num);
 
