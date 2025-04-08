@@ -19,11 +19,11 @@ int main()
     gpio_put(25, 1); // turn on LED
  
     // initalize the button 
-    gpio_init(22);
-    gpio_set_dir(22, GPIO_IN);
+    gpio_init(21);
+    gpio_set_dir(21, GPIO_IN);
 
     // wait until button is pressed
-    while (gpio_get(22) != 0) {
+    while (gpio_get(21) != 0) {
         sleep_ms(100);
     }
 
