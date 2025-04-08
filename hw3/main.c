@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
+#include "hardware/adc.h"
 
 
 int main()
@@ -20,6 +21,11 @@ int main()
     gpio_init(22);
     gpio_set_dir(22, GPIO_IN);
 
+    // initialize adc
+    adc_init(); // init the adc module
+    adc_gpio_init(26); // set ADC0 pin to be adc input instead of GPIO
+    adc_select_input(0); // select to read from ADC0
+
     while (1) {
         if (gpio_get(22) == 0) {
             gpio_put(25, 1);
@@ -27,6 +33,8 @@ int main()
             gpio_put(25, 0);
         }
 
+        uint16_t result = adc_read();
+        printf("adc value: %d\r\n", result);
         // char message[100];
         // scanf("%s", message);
         // printf("message: %s\r\n",message);
