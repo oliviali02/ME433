@@ -16,10 +16,19 @@ int main()
     // initalize the LED on the PICO
     gpio_init(25);
     gpio_set_dir(25, GPIO_OUT);
-
+    gpio_put(25, 1); // turn on LED
+ 
     // initalize the button 
     gpio_init(22);
     gpio_set_dir(22, GPIO_IN);
+
+    // wait until button is pressed
+    while (gpio_get(22) != 0) {
+        sleep_ms(100);
+    }
+
+    // turn off LED
+    gpio_put(25, 0);
 
     // initialize adc
     adc_init(); // init the adc module
@@ -27,17 +36,15 @@ int main()
     adc_select_input(0); // select to read from ADC0
 
     while (1) {
-        if (gpio_get(22) == 0) {
-            gpio_put(25, 1);
-        } else {
-            gpio_put(25, 0);
-        }
+        printf("Enter how many analog samples to take (0 - 100): ");
+        int num;
+        scanf("%d", &num);
 
-        uint16_t result = adc_read();
-        printf("adc value: %d\r\n", result);
-        // char message[100];
-        // scanf("%s", message);
-        // printf("message: %s\r\n",message);
-        // sleep_ms(50);
+        for (int i = 0; i < num; i++) {
+            uint16_t result = adc_read();
+            float voltage = (float) (result/4095.0) * 3.3;
+            printf("adc value: %.2f\r\n", voltage);
+            sleep_ms(10);
+        }
     }
 }
