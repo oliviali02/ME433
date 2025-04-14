@@ -43,8 +43,12 @@ int main()
     gpio_put(PIN_CS, 1);
     // For more examples of SPI use see https://github.com/raspberrypi/pico-examples/tree/master/spi
 
+    // variables for triangle wave
+    bool inc = true; // is the triangle wave increasing or decreasing
+    float v_b = 0.0;
+
     while (true) {
-        float t = 0;
+        float t = 0.0;
 
         for (int i = 0; i < 10000; i++) {
             t = t + 0.01;
@@ -54,9 +58,24 @@ int main()
             writeDAC(0, v_a);
 
             // 1 Hz triangle wave on channel B
-            // float v_b = (6.6/M_PI) * asin(sin(2*M_PI*t));
-            // writeDAC(1, v_a);
-            // sleep_ms(10);
+            if (inc == true) {
+                v_b += 6.6*0.01;
+                if (v_b > 3.3) {
+                    v_b = 3.3;
+                    inc = false;
+                }
+            } 
+
+            if (inc == false) {
+                v_b -= 6.6*0.01;
+                if (v_b < 0.0) {
+                    v_b = 0.0;
+                    inc = true;
+                }
+            }
+
+            writeDAC(1, v_b);
+            sleep_ms(10);
         }
     }
 }
