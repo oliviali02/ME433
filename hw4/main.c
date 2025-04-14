@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
+#include <math.h>
 
 // SPI Defines
 // We are going to use SPI 0, and allocate it to the following GPIO pins
@@ -31,7 +32,7 @@ int main()
     stdio_init_all();
 
     // SPI initialisation. This example will use SPI at 1MHz.
-    spi_init(SPI_PORT, 1000);
+    spi_init(SPI_PORT, 1000000);
     gpio_set_function(PIN_MISO, GPIO_FUNC_SPI);
     gpio_set_function(PIN_CS,   GPIO_FUNC_SIO);
     gpio_set_function(PIN_SCK,  GPIO_FUNC_SPI);
@@ -43,38 +44,39 @@ int main()
     // For more examples of SPI use see https://github.com/raspberrypi/pico-examples/tree/master/spi
 
     while (true) {
-        printf("Hello, world!\n");
-        writeDAC(0, 0.0);
-        sleep_ms(1000);
+        float t = 0;
 
-        // float t = 0;
+        for (int i = 0; i < 10000; i++) {
+            t = t + 0.01;
+            
+            // 2 Hz sine wave on channel A
+            float v_a = 1.65 * sin(4.0*M_PI*t) + 1.65;
+            writeDAC(0, v_a);
 
-        // for (int i = 0; i < 100; i++) {
-        //     t = t + 0.1;
-        //     float v = sin(t);
-        //     writeDAC(0, v);
-        //     sleep_ms(10);
-        // }
+            // 1 Hz triangle wave on channel B
+            // float v_b = (6.6/M_PI) * asin(sin(2*M_PI*t));
+            // writeDAC(1, v_a);
+            // sleep_ms(10);
+        }
     }
 }
 
 void writeDAC(int channel, float voltage) {
     uint8_t data[2];
     int len = 2;
-    data[0] = 0b01010101;
-    data[1] = 0b11111111;
-
-    // uint16_t d = 0;
-    // d = d | (channel << 15);
-    // d = d | 0b111 << 12; // may not be 12
+   
+    // bit shift to change the channel
+    uint16_t d = 0;
+    d = d | (channel << 15);
+    d = d | 0b111 << 12; 
     
-    // uint16_t v = (voltage / 3.3) * 1024; 
-    // d = d | v << 2;
+    // convert the voltage to a 10 bit value and add it to the data
+    uint16_t v = (uint16_t) ((voltage / 3.3) * 1023); 
 
-    // data[0] = d >> 0;
+    d = d | v << 2; 
 
-    // data[0] = 0b01111000;
-    // data[1] = 0b00000000;
+    data[0] = d >> 8;
+    data[1] = d & 0xFF;
 
     cs_select(PIN_CS);
     spi_write_blocking(SPI_PORT, data, len); // where data is a uint8_t array with length len
