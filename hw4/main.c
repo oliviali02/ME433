@@ -24,23 +24,14 @@ static inline void cs_deselect(uint cs_pin) {
     asm volatile("nop \n nop \n nop"); // FIXME
 }
 
-void writeDAC() {
-    uint8_t data[2];
-    int len = 2;
-    data[0] = 0b01010101;
-    data[1] = 0b11111111;
-
-    cs_select(PIN_CS);
-    spi_write_blocking(SPI_PORT, data, len); // where data is a uint8_t array with length len
-    cs_deselect(PIN_CS);
-}
+void writeDAC(int channel, float voltage);
 
 int main()
 {
     stdio_init_all();
 
     // SPI initialisation. This example will use SPI at 1MHz.
-    spi_init(SPI_PORT, 1000*1000);
+    spi_init(SPI_PORT, 1000);
     gpio_set_function(PIN_MISO, GPIO_FUNC_SPI);
     gpio_set_function(PIN_CS,   GPIO_FUNC_SIO);
     gpio_set_function(PIN_SCK,  GPIO_FUNC_SPI);
@@ -53,9 +44,40 @@ int main()
 
     while (true) {
         printf("Hello, world!\n");
+        writeDAC(0, 0.0);
         sleep_ms(1000);
-        writeDAC();
+
+        // float t = 0;
+
+        // for (int i = 0; i < 100; i++) {
+        //     t = t + 0.1;
+        //     float v = sin(t);
+        //     writeDAC(0, v);
+        //     sleep_ms(10);
+        // }
     }
 }
 
+void writeDAC(int channel, float voltage) {
+    uint8_t data[2];
+    int len = 2;
+    data[0] = 0b01010101;
+    data[1] = 0b11111111;
+
+    // uint16_t d = 0;
+    // d = d | (channel << 15);
+    // d = d | 0b111 << 12; // may not be 12
+    
+    // uint16_t v = (voltage / 3.3) * 1024; 
+    // d = d | v << 2;
+
+    // data[0] = d >> 0;
+
+    // data[0] = 0b01111000;
+    // data[1] = 0b00000000;
+
+    cs_select(PIN_CS);
+    spi_write_blocking(SPI_PORT, data, len); // where data is a uint8_t array with length len
+    cs_deselect(PIN_CS);
+}
 
