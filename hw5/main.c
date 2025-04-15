@@ -40,6 +40,55 @@ int main()
     // For more examples of SPI use see https://github.com/raspberrypi/pico-examples/tree/master/spi
 
     init_ram();
+    
+    while (!stdio_usb_connected()) {
+        sleep_ms(100);
+    }
+
+    // how many cycles does it take to do each operation of floating point math?
+    volatile float f1 = 1.0, f2 = 1.0;
+    volatile float f_add, f_sub, f_mult, f_div;
+
+    absolute_time_t t1 = get_absolute_time(); 
+    for (int i = 0; i < 1000; i++) {
+        f_add = f1+f2;
+    }
+    absolute_time_t t2 = get_absolute_time();
+    uint64_t t = to_us_since_boot(t2 - t1);
+    // printf("addition = %llu\n", t);
+    int clock_cycles = (int) (t/6.667);
+    printf("addition: %d\r\n", clock_cycles);
+
+    t1 = get_absolute_time();
+    for (int i = 0; i < 1000; i++) {
+        f_sub = f1-f2;
+    }
+    t2 = get_absolute_time();
+    t = to_us_since_boot(t2 - t1);
+    // printf("subtraction = %llu\n", t);
+    clock_cycles = (int) (t/6.667);
+    printf("subtraction: %d\r\n", clock_cycles);
+
+    t1 = get_absolute_time();
+    for (int i = 0; i < 1000; i++) {
+        f_mult = f1*f2;
+    }
+    t2 = get_absolute_time();
+    t = to_us_since_boot(t2 - t1);
+    // printf("multiplication = %llu\n", t);
+    clock_cycles = (int) (t/6.667);
+    printf("multiplication: %d\r\n", clock_cycles);
+
+    t1 = get_absolute_time();
+    for (int i = 0; i < 1000; i++) {
+        f_div = f1/f2;
+    }
+    t2 = get_absolute_time();
+    t = to_us_since_boot(t2 - t1);
+    // printf("division = %llu\n", t);
+    clock_cycles = (int) (t/6.667);
+    printf("division: %d\r\n", clock_cycles);
+
 
     // for i = 0 to 1000
         // calculate v = sin(t)
@@ -50,7 +99,7 @@ int main()
             // float val = ram_read(address);
         // send the float to the dac (copy what was done in hw4)
         // wait one ms
-        printf("Hello, world!\n");
+        // printf("Hello, world!\n");
         sleep_ms(1000);
     }
 }
