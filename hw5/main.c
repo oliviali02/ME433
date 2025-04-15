@@ -46,7 +46,9 @@ int main()
     }
 
     // how many cycles does it take to do each operation of floating point math?
-    volatile float f1 = 1.0, f2 = 1.0;
+    volatile float f1, f2;
+    printf("Enter two floats to use: \r\n");
+    scanf("%f %f", &f1, &f2);
     volatile float f_add, f_sub, f_mult, f_div;
 
     absolute_time_t t1 = get_absolute_time(); 
