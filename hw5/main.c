@@ -17,6 +17,18 @@ union FloatInt {
     uint32_t i;
 };
 
+static inline void cs_select(uint cs_pin) {
+    asm volatile("nop \n nop \n nop"); // FIXME
+    gpio_put(cs_pin, 0);
+    asm volatile("nop \n nop \n nop"); // FIXME
+}
+
+static inline void cs_deselect(uint cs_pin) {
+    asm volatile("nop \n nop \n nop"); // FIXME
+    gpio_put(cs_pin, 1);
+    asm volatile("nop \n nop \n nop"); // FIXME
+}
+
 void init_ram();
 void ram_write(uint16_t address, float voltage);
 float ram_read(uint16_t address);
@@ -25,6 +37,7 @@ float ram_read(uint16_t address);
 int main()
 {
     stdio_init_all();
+    init_ram();
 
     // SPI initialisation. This example will use SPI at 1MHz.
     spi_init(SPI_PORT, 1000*1000);
@@ -38,19 +51,21 @@ int main()
     gpio_set_dir(PIN_CS_DAC, GPIO_OUT);
     gpio_put(PIN_CS_DAC, 1);
     // For more examples of SPI use see https://github.com/raspberrypi/pico-examples/tree/master/spi
-
-    init_ram();
     
+    // wait until connected to screen
     while (!stdio_usb_connected()) {
         sleep_ms(100);
     }
 
+    //
     // how many cycles does it take to do each operation of floating point math?
+    //
     volatile float f1, f2;
     printf("Enter two floats to use: \r\n");
     scanf("%f %f", &f1, &f2);
     volatile float f_add, f_sub, f_mult, f_div;
 
+    // addition
     absolute_time_t t1 = get_absolute_time(); 
     for (int i = 0; i < 1000; i++) {
         f_add = f1+f2;
@@ -61,6 +76,7 @@ int main()
     int clock_cycles = (int) (t/6.667);
     printf("addition: %d\r\n", clock_cycles);
 
+    // subtraction
     t1 = get_absolute_time();
     for (int i = 0; i < 1000; i++) {
         f_sub = f1-f2;
@@ -71,6 +87,7 @@ int main()
     clock_cycles = (int) (t/6.667);
     printf("subtraction: %d\r\n", clock_cycles);
 
+    // multiplication
     t1 = get_absolute_time();
     for (int i = 0; i < 1000; i++) {
         f_mult = f1*f2;
@@ -81,6 +98,7 @@ int main()
     clock_cycles = (int) (t/6.667);
     printf("multiplication: %d\r\n", clock_cycles);
 
+    // division
     t1 = get_absolute_time();
     for (int i = 0; i < 1000; i++) {
         f_div = f1/f2;
@@ -91,6 +109,7 @@ int main()
     clock_cycles = (int) (t/6.667);
     printf("division: %d\r\n", clock_cycles);
 
+    uint16_t address = 0;
 
     // for i = 0 to 1000
         // calculate v = sin(t)
@@ -108,19 +127,21 @@ int main()
 
 void init_ram() {
     uint8_t buff[2];
+    int len = 2;
+
     // buff[0] = instruction -> name of SFR
     // buff[1] = value -> what you want to change it to
-    buff[0] = 0b00000101; // i want to change the status register 
+    buff[0] = 0b00000101; // I want to change the status register...
     buff[1] = 0b01000000; // to sequential mode
 
-
-    // cs low 
-    // spi_write_blocking
-    // cs high
+    cs_select(PIN_CS_RAM);
+    spi_write_blocking(SPI_PORT, buff, len); 
+    cs_deselect(PIN_CS_RAM);
 }
 
 void ram_write(uint16_t address, float voltage) {
     // need to write 7 times 
+    int len = 7;
     uint8_t buff[7];
     buff[0] = 0b00000010; 
     buff[1] = address >> 8;
@@ -130,21 +151,21 @@ void ram_write(uint16_t address, float voltage) {
     union FloatInt num;
     num.f = voltage;
 
-    buff[3] = num.i>>24; // leftmost 8 bit
-    // buff[4] = 
-    // buff[5] = 
-    // buff[6] =   // right most 8 bit
+    buff[3] = (num.i >> 24) & 0xFF; // leftmost 8 bits 
+    buff[4] = (num.i >> 16) & 0xFF;
+    buff[5] = (num.i >> 8)  & 0xFF;
+    buff[6] = num.i & 0xFF; // rightmost 8 bits 
 
-    // cs low 
-    // spi_write_blocking
-    // cs high
+    cs_select(PIN_CS_RAM);
+    spi_write_blocking(SPI_PORT, buff, len); 
+    cs_deselect(PIN_CS_RAM);
 }
 
 float ram_read(uint16_t address) {
     uint8_t out_buff[7];
     uint8_t in_buff[7];
 
-    out_buff[0]; // instruciton
+    out_buff[0] = 0b00000011;
     out_buff[1]; // address
     out_buff[2]; // address
 
