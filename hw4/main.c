@@ -58,6 +58,7 @@ int main()
             writeDAC(0, v_a);
 
             // 1 Hz triangle wave on channel B
+            // rising edge of triangle wave
             if (inc == true) {
                 v_b += 6.6*0.01;
                 if (v_b > 3.3) {
@@ -65,7 +66,8 @@ int main()
                     inc = false;
                 }
             } 
-
+            
+            // falling edge triangle wave
             if (inc == false) {
                 v_b -= 6.6*0.01;
                 if (v_b < 0.0) {
@@ -92,10 +94,10 @@ void writeDAC(int channel, float voltage) {
     // convert the voltage to a 10 bit value and add it to the data
     uint16_t v = (uint16_t) ((voltage / 3.3) * 1023); 
 
-    d = d | v << 2; 
+    d = d | v << 2; // shift over by 2 because last 2 bits are 0 since not available
 
-    data[0] = d >> 8;
-    data[1] = d & 0xFF;
+    data[0] = d >> 8; // left most 8 bits of d
+    data[1] = d & 0xFF; // right most 8 bits of d
 
     cs_select(PIN_CS);
     spi_write_blocking(SPI_PORT, data, len); // where data is a uint8_t array with length len
