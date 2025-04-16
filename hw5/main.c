@@ -37,7 +37,6 @@ float ram_read(uint16_t address);
 int main()
 {
     stdio_init_all();
-    init_ram();
 
     // SPI initialisation. This example will use SPI at 1MHz.
     spi_init(SPI_PORT, 1000*1000);
@@ -50,8 +49,13 @@ int main()
     // Chip select is active-low, so we'll initialise it to a driven-high state
     gpio_set_dir(PIN_CS_DAC, GPIO_OUT);
     gpio_put(PIN_CS_DAC, 1);
+
+    gpio_set_dir(PIN_CS_RAM, GPIO_OUT);
+    gpio_put(PIN_CS_RAM, 1);
     // For more examples of SPI use see https://github.com/raspberrypi/pico-examples/tree/master/spi
     
+    init_ram();
+
     // wait until connected to screen
     while (!stdio_usb_connected()) {
         sleep_ms(100);
@@ -60,6 +64,7 @@ int main()
     //
     // how many cycles does it take to do each operation of floating point math?
     //
+    /*
     volatile float f1, f2;
     printf("Enter two floats to use: \r\n");
     scanf("%f %f", &f1, &f2);
@@ -108,8 +113,16 @@ int main()
     // printf("division = %llu\n", t);
     clock_cycles = (int) (t/6.667);
     printf("division: %d\r\n", clock_cycles);
+    */
 
     uint16_t address = 0;
+    // float voltage = 3.3;
+    // ram_write(0, 3.3);
+    // float read_value = ram_read(0);
+    // printf("read voltage: %.2f \n", read_value);
+    // ram_write(4, 2.5);
+    // read_value = ram_read(4);
+    // printf("read voltage: %.2f \n", read_value);
 
     // for i = 0 to 1000
         // calculate v = sin(t)
@@ -131,7 +144,7 @@ void init_ram() {
 
     // buff[0] = instruction -> name of SFR
     // buff[1] = value -> what you want to change it to
-    buff[0] = 0b00000101; // I want to change the status register...
+    buff[0] = 0b00000001; // I want to change the status register...
     buff[1] = 0b01000000; // to sequential mode
 
     cs_select(PIN_CS_RAM);
@@ -156,27 +169,32 @@ void ram_write(uint16_t address, float voltage) {
     buff[5] = (num.i >> 8)  & 0xFF;
     buff[6] = num.i & 0xFF; // rightmost 8 bits 
 
+    printf("Write bytes: %02X %02X %02X %02X\n", buff[3], buff[4], buff[5], buff[6]);
+
     cs_select(PIN_CS_RAM);
     spi_write_blocking(SPI_PORT, buff, len); 
     cs_deselect(PIN_CS_RAM);
 }
 
 float ram_read(uint16_t address) {
+    int len = 7;
     uint8_t out_buff[7];
     uint8_t in_buff[7];
 
     out_buff[0] = 0b00000011;
-    out_buff[1]; // address
-    out_buff[2]; // address
+    out_buff[1] = address >> 8;
+    out_buff[2] = address & 0xFF;
+    out_buff[3] = 0b00000000;
+    out_buff[4] = 0b00000000;
+    out_buff[5] = 0b00000000;
+    out_buff[6] = 0b00000000;
 
-    // cs low 
-    // spi_write_read_blocking
-        // wants two buffers (outbuf and inbuf)
-        // as it writes element 0 of outbuf, it reads element 0 of inbuf
-        // last 4 items of outbuff can be anything
-    // cs high
+    cs_select(PIN_CS_RAM);
+    spi_write_read_blocking(SPI_PORT, out_buff, in_buff, len); 
+    cs_deselect(PIN_CS_RAM);
 
-    // num.i = (in_buff[3] << 24) | (in_buff[4] << 16)
-    // return num.f in the endf
-    return 0.0;
+    printf("read bits: %02X %02X %02X %02X\n", in_buff[3], in_buff[4], in_buff[5], in_buff[6]);
+    union FloatInt num;
+    num.i =  num.i | (in_buff[3] << 24) | (in_buff[4] << 16) | (in_buff[5] << 8) | in_buff[6];
+    return num.f;
 }
