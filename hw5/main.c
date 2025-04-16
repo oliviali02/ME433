@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
+#include <math.h>
 
 // SPI Defines
 // We are going to use SPI 0, and allocate it to the following GPIO pins
@@ -33,6 +34,9 @@ void init_ram();
 void ram_write(uint16_t address, float voltage);
 float ram_read(uint16_t address);
 
+void writeDAC(int channel, float voltage);
+
+void floatMath();
 
 int main()
 {
@@ -56,85 +60,42 @@ int main()
     
     init_ram();
 
-    // wait until connected to screen
-    while (!stdio_usb_connected()) {
-        sleep_ms(100);
-    }
-
     //
-    // how many cycles does it take to do each operation of floating point math?
+    // load 1000 floats into external ram
+    // to represents a single sine wave
     //
-    /*
-    volatile float f1, f2;
-    printf("Enter two floats to use: \r\n");
-    scanf("%f %f", &f1, &f2);
-    volatile float f_add, f_sub, f_mult, f_div;
-
-    // addition
-    absolute_time_t t1 = get_absolute_time(); 
-    for (int i = 0; i < 1000; i++) {
-        f_add = f1+f2;
-    }
-    absolute_time_t t2 = get_absolute_time();
-    uint64_t t = to_us_since_boot(t2 - t1);
-    // printf("addition = %llu\n", t);
-    int clock_cycles = (int) (t/6.667);
-    printf("addition: %d\r\n", clock_cycles);
-
-    // subtraction
-    t1 = get_absolute_time();
-    for (int i = 0; i < 1000; i++) {
-        f_sub = f1-f2;
-    }
-    t2 = get_absolute_time();
-    t = to_us_since_boot(t2 - t1);
-    // printf("subtraction = %llu\n", t);
-    clock_cycles = (int) (t/6.667);
-    printf("subtraction: %d\r\n", clock_cycles);
-
-    // multiplication
-    t1 = get_absolute_time();
-    for (int i = 0; i < 1000; i++) {
-        f_mult = f1*f2;
-    }
-    t2 = get_absolute_time();
-    t = to_us_since_boot(t2 - t1);
-    // printf("multiplication = %llu\n", t);
-    clock_cycles = (int) (t/6.667);
-    printf("multiplication: %d\r\n", clock_cycles);
-
-    // division
-    t1 = get_absolute_time();
-    for (int i = 0; i < 1000; i++) {
-        f_div = f1/f2;
-    }
-    t2 = get_absolute_time();
-    t = to_us_since_boot(t2 - t1);
-    // printf("division = %llu\n", t);
-    clock_cycles = (int) (t/6.667);
-    printf("division: %d\r\n", clock_cycles);
-    */
-
     uint16_t address = 0;
-    // float voltage = 3.3;
-    // ram_write(0, 3.3);
-    // float read_value = ram_read(0);
-    // printf("read voltage: %.2f \n", read_value);
-    // ram_write(4, 2.5);
-    // read_value = ram_read(4);
-    // printf("read voltage: %.2f \n", read_value);
-
     // for i = 0 to 1000
         // calculate v = sin(t)
         // ram_write(address, voltage);
+    float voltage = 0;
+    float t = 0.0;
 
+    for (int i = 0; i < 1000; i++) {
+        voltage = 1.65 * sin(2.0*M_PI*t) + 1.65;
+        ram_write(address, voltage);
+
+        t = t + 0.01;
+        address = address + 4;
+    }
+
+    address = 0;
+    float read_value;
     while (true) {
         // read for one address
-            // float val = ram_read(address);
-        // send the float to the dac (copy what was done in hw4)
-        // wait one ms
-        // printf("Hello, world!\n");
-        sleep_ms(1000);
+        read_value = ram_read(address);
+
+        // send to DAC
+        writeDAC(0, read_value);
+        
+        // delay 10 ms to create 1 Hz sine wave
+        sleep_ms(10);
+
+        if (address == 3996) {
+            address = 0;
+        } else {
+            address += 4;
+        }
     }
 }
 
@@ -197,4 +158,85 @@ float ram_read(uint16_t address) {
     union FloatInt num;
     num.i =  num.i | (in_buff[3] << 24) | (in_buff[4] << 16) | (in_buff[5] << 8) | in_buff[6];
     return num.f;
+}
+
+void writeDAC(int channel, float voltage) {
+    uint8_t data[2];
+    int len = 2;
+   
+    // bit shift to change the channel
+    uint16_t d = 0;
+    d = d | (channel << 15);
+    d = d | 0b111 << 12; 
+    
+    // convert the voltage to a 10 bit value and add it to the data
+    uint16_t v = (uint16_t) ((voltage / 3.3) * 1023); 
+
+    d = d | v << 2; // shift over by 2 because last 2 bits are 0 since not available
+
+    data[0] = d >> 8; // left most 8 bits of d
+    data[1] = d & 0xFF; // right most 8 bits of d
+
+    cs_select(PIN_CS_DAC);
+    spi_write_blocking(SPI_PORT, data, len); // where data is a uint8_t array with length len
+    cs_deselect(PIN_CS_DAC);
+}
+
+void floatMath() {
+    // wait until connected to screen
+    while (!stdio_usb_connected()) {
+        sleep_ms(100);
+    }
+
+    //
+    // how many cycles does it take to do each operation of floating point math?
+    //
+    volatile float f1, f2;
+    printf("Enter two floats to use: \r\n");
+    scanf("%f %f", &f1, &f2);
+    volatile float f_add, f_sub, f_mult, f_div;
+
+    // addition
+    absolute_time_t t1 = get_absolute_time(); 
+    for (int i = 0; i < 1000; i++) {
+        f_add = f1+f2;
+    }
+    absolute_time_t t2 = get_absolute_time();
+    uint64_t t = to_us_since_boot(t2 - t1);
+    // printf("addition = %llu\n", t);
+    int clock_cycles = (int) (t/6.667);
+    printf("addition: %d\r\n", clock_cycles);
+
+    // subtraction
+    t1 = get_absolute_time();
+    for (int i = 0; i < 1000; i++) {
+        f_sub = f1-f2;
+    }
+    t2 = get_absolute_time();
+    t = to_us_since_boot(t2 - t1);
+    // printf("subtraction = %llu\n", t);
+    clock_cycles = (int) (t/6.667);
+    printf("subtraction: %d\r\n", clock_cycles);
+
+    // multiplication
+    t1 = get_absolute_time();
+    for (int i = 0; i < 1000; i++) {
+        f_mult = f1*f2;
+    }
+    t2 = get_absolute_time();
+    t = to_us_since_boot(t2 - t1);
+    // printf("multiplication = %llu\n", t);
+    clock_cycles = (int) (t/6.667);
+    printf("multiplication: %d\r\n", clock_cycles);
+
+    // division
+    t1 = get_absolute_time();
+    for (int i = 0; i < 1000; i++) {
+        f_div = f1/f2;
+    }
+    t2 = get_absolute_time();
+    t = to_us_since_boot(t2 - t1);
+    // printf("division = %llu\n", t);
+    clock_cycles = (int) (t/6.667);
+    printf("division: %d\r\n", clock_cycles);
 }
