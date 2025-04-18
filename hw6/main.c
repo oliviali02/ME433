@@ -25,7 +25,7 @@ void pico_set_led(bool led_on);
 
 void mcp_init();
 void setPin(unsigned char address, unsigned char register, unsigned char value);
-// unsigned char readPin(unsigned char address, unsigned char register);
+unsigned char readPin(unsigned char address, unsigned char register);
 
 int main()
 {
@@ -47,13 +47,20 @@ int main()
     // intialize the MCP23008
     mcp_init();
 
+    unsigned char read_value;
     while (true) {
         pico_set_led(true);
-        sleep_ms(LED_DELAY_MS);
+        
+        read_value = readPin(address, 0x09);
+        sleep_ms(10);
+        if ((read_value & 1) == 0) {
+            setPin(address, 0x0A, 0b10000000);
+        } else {
+            setPin(address, 0x0A, 0b00000000);
+        }
+
         pico_set_led(false);
         sleep_ms(LED_DELAY_MS);
-
-        setPin(address, 0x0A, 0b10000000);
     }
 }
 
@@ -105,4 +112,13 @@ void setPin(unsigned char addr, unsigned char reg, unsigned char value) {
 
     i2c_write_blocking(I2C_PORT, addr, buff, len, false);
 
+}
+
+unsigned char readPin(unsigned char addr, unsigned char reg) {
+    unsigned char buff;
+
+    i2c_write_blocking(I2C_PORT, addr, &reg, 1, true);  // true to keep master control of bus
+    i2c_read_blocking(I2C_PORT, addr, &buff, 1, false);  // false - finished with bus
+
+    return buff;
 }
