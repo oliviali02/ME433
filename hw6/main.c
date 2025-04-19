@@ -47,20 +47,28 @@ int main()
     // intialize the MCP23008
     mcp_init();
 
+    // variables for tracking the heartbeat LED
+    bool led_on = false;
+    absolute_time_t last_heartbeat = get_absolute_time();
+    uint64_t t1 = to_us_since_boot(last_heartbeat);
+
     unsigned char read_value;
+
     while (true) {
-        pico_set_led(true);
+        absolute_time_t cur_time = get_absolute_time();
+        uint64_t t2 = to_us_since_boot(cur_time);
+        if ((t2 - t1) > 500e3) {
+            led_on = !led_on;
+            pico_set_led(led_on);
+            t1 = t2;
+        }
         
-        read_value = readPin(address, 0x09);
-        sleep_ms(10);
-        if ((read_value & 1) == 0) {
+        read_value = readPin(address, 0x09); // read button pin
+        if ((read_value & 1) == 0) { // button is pushed
             setPin(address, 0x0A, 0b10000000);
-        } else {
+        } else { // button not pushed
             setPin(address, 0x0A, 0b00000000);
         }
-
-        pico_set_led(false);
-        sleep_ms(LED_DELAY_MS);
     }
 }
 
