@@ -56,7 +56,7 @@ target_include_directories(hw7 PRIVATE
 # Add any user requested libraries
 target_link_libraries(hw7 
         hardware_i2c
-        )
+        hardware_adc)
 
 pico_add_extra_outputs(hw7)
 

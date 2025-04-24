@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
+#include "hardware/adc.h"
 #include "ssd1306.h"
 #include "font.h"
 
@@ -41,38 +42,51 @@ int main()
     gpio_pull_up(I2C_SCL);
     // For more examples of I2C use see https://github.com/raspberrypi/pico-examples/tree/master/i2c
 
+    // OLED screen initialization 
     ssd1306_setup();
     ssd1306_clear();
     ssd1306_update();
 
+    // ADC initialization
+    adc_init(); // init the adc module
+    adc_gpio_init(26); // set ADC0 pin to be adc input instead of GPIO
+    adc_select_input(0); // select to read from ADC0
+
     // variables for tracking the heartbeat LED
     bool led_on = false;
     absolute_time_t last_heartbeat = get_absolute_time();
-    uint64_t t1 = to_us_since_boot(last_heartbeat);
+    uint64_t t1_led = to_us_since_boot(last_heartbeat);
 
     while (true) {
         absolute_time_t cur_time = get_absolute_time();
-        uint64_t t2 = to_us_since_boot(cur_time);
-        if ((t2 - t1) > 500e3) {
+        uint64_t t2_led = to_us_since_boot(cur_time);
+        if ((t2_led - t1_led) > 1e6) {
             led_on = !led_on;
             pico_set_led(led_on);
-            t1 = t2;
+            t1_led = t2_led;
         }
 
-        // printf("Hello, world!\n");
-        // sleep_ms(1000);
-        // unsigned int t1 = to_us_since_boot(get_absolute_time());  
+        unsigned int t1 = to_us_since_boot(get_absolute_time());  
 
+        // write the voltage of the potentiometer to the screen
         char message[50];
         ssd1306_clear(); 
-        sprintf(message, "hello");
-        drawMessage(5, 5, message);
+        uint16_t result = adc_read();
+        float voltage = (float) (result/4095.0) * 3.3;
+        sprintf(message, "%.2f volts", voltage);
+        drawMessage(35, 10, message);
         ssd1306_update();  
+        
+        // write the frames per second to the screen
+        unsigned int t2 = to_us_since_boot(get_absolute_time());  
+        unsigned int tdiff = t2 - t1;
+        printf("%d\n", tdiff);
+        unsigned int frames = (int) (1.0/(tdiff/1000000.0));    // convert tdiff to frames per second
+        sprintf(message, "%d fps", frames);
+        drawMessage(40, 20, message);
+        ssd1306_update(); 
 
-        // unsigned int t2 = to_us_since_boot(get_absolute_time());  
-        // unsigned int tdiff = t2 - t1;
-        // convert tdiff to frames per second
-        sleep_ms(1000);
+        // sleep_ms(1000);
     }
 }
 
