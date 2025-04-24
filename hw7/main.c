@@ -86,7 +86,6 @@ int main()
         drawMessage(40, 20, message);
         ssd1306_update(); 
 
-        // sleep_ms(1000);
     }
 }
 
