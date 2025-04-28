@@ -25,6 +25,7 @@ void drawLetter(int x, int y, char c);
 void drawMessage(int x, int y, char * m);
 
 
+
 int main()
 {
     // initialize the built in LED

@@ -10,6 +10,7 @@
 #include "pico/stdlib.h"
 #include "hardware/pio.h"
 #include "hardware/clocks.h"
+#include "hardware/pwm.h"
 #include "ws2812.pio.h"
 
 /**
@@ -40,6 +41,10 @@
 #if WS2812_PIN >= NUM_BANK0_GPIOS
 #error Attempting to use a pin>=32 on a platform that does not support it
 #endif
+
+#define PWM_Pin 16 // the built in LED on the Pico
+
+static uint16_t wrap = 50000;
 
 // link three 8bit colors together
 typedef struct {
@@ -142,6 +147,31 @@ wsColor HSBtoRGB(float hue, float sat, float brightness) {
     return c;
 }
 
+void servo_init() {
+    gpio_set_function(PWM_Pin, GPIO_FUNC_PWM); // Set the pin to be PWM
+
+    // initialize PWM to 50 Hz
+    uint slice_num = pwm_gpio_to_slice_num(PWM_Pin); // Get PWM slice number
+
+    float div = 60.0; // must be between 1-255
+    pwm_set_clkdiv(slice_num, div); // divider
+
+    wrap = 50000; // when to rollover, must be less than 65535
+    pwm_set_wrap(slice_num, wrap);
+
+    pwm_set_enabled(slice_num, true); // turn on the PWM
+}
+
+void set_servo_angle(float angle) {
+    float pwm_min = 0.025 * wrap;
+    float pwm_max = 0.125 * wrap;
+
+    uint16_t pwm = (uint16_t) ((angle/180.0)*(pwm_max - pwm_min) + pwm_min);
+
+    pwm_set_gpio_level(PWM_Pin, pwm); // set the duty cycle 
+}
+
+
 int main() {
     //set_sys_clock_48();
     stdio_init_all();
@@ -160,20 +190,24 @@ int main() {
 
     // initialize given assembly code
     ws2812_program_init(pio, sm, offset, WS2812_PIN, 800000, IS_RGBW);
-    // wsColor c;
     wsColor c[4];
-    // wsColor c1;
-    // wsColor c2;
-    // wsColor c3;
-    // wsColor c4;
+    servo_init();
+
     while (1) {
+        float angle = 0.0;
         for (int i = 0; i <= 360; i++) {
+            set_servo_angle(angle);
             for(int j=0;j<NUM_PIXELS;j++){
                 c[j] = HSBtoRGB((i + (j*60)) % 361, 1.0, 0.1);
                 put_pixel(pio, sm, urgb_u32(c[j].r, c[j].g, c[j].b)); // assuming you've made arrays of colors to send
                 // sleep_ms(5);
             }
             sleep_ms(14); // wait at least the reset time
+            if (i <= 180) {
+                angle++;
+            } else {
+                angle--;
+            }
         }
     }
 
