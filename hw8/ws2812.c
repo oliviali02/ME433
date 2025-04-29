@@ -191,10 +191,12 @@ int main() {
     // initialize given assembly code
     ws2812_program_init(pio, sm, offset, WS2812_PIN, 800000, IS_RGBW);
     wsColor c[4];
+
     servo_init();
+    bool forward = true;
+    float angle = 0.0;
 
     while (1) {
-        float angle = 0.0;
         for (int i = 0; i <= 360; i++) {
             set_servo_angle(angle);
             for(int j=0;j<NUM_PIXELS;j++){
@@ -203,10 +205,20 @@ int main() {
                 // sleep_ms(5);
             }
             sleep_ms(14); // wait at least the reset time
-            if (i <= 180) {
-                angle++;
-            } else {
-                angle--;
+            if (i % 2 == 0) {
+                if (forward) {
+                    angle++;
+                    if (angle >= 180) {
+                        angle = 180;
+                        forward = false;
+                    }
+                } else {
+                    angle--;
+                    if (angle <= 0) {
+                        angle = 0;
+                        forward = true;
+                    }
+                }
             }
         }
     }
