@@ -70,6 +70,8 @@ int main() {
             pico_set_led(true);
         } else if (g == 2) {
             pico_set_led(false);
+        } else {
+            printf("**ERROR: invalid command**\r\n");
         }
         
         tight_loop_contents(); // for core0 to stay on
@@ -125,6 +127,8 @@ void core1_entry() {
             multicore_fifo_push_blocking(1);
         } else if (g == 2)  {
             multicore_fifo_push_blocking(2);
+        } else {
+            multicore_fifo_push_blocking(3);
         }
     }
 }
