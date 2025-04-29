@@ -51,21 +51,6 @@ int main() {
 
     multicore_launch_core1(core1_entry);
 
-    // // Wait for it to start up
-
-    // // core0 waiting for message from core1
-    // uint32_t g = multicore_fifo_pop_blocking();
-
-    // // is this the expected value?
-    // if (g != FLAG_VALUE) 
-    //     printf("Hmm, that's not right on core 0!\n");
-    // else {
-    //     multicore_fifo_push_blocking(FLAG_VALUE);
-    //     printf("It's all gone well on core 0!\r\n");
-    // }
-
-
-
     while (1) {
         printf("Send a 0 to read voltage on A0, 1 to turn on the LED, or 2 to turn off the LED\r\n");
         scanf("%d", &message);
@@ -136,13 +121,9 @@ void core1_entry() {
     
             // push a command to core0
             multicore_fifo_push_blocking(0);
-
         } else if (g == 1) {
-            // push a command to core0
             multicore_fifo_push_blocking(1);
-
         } else if (g == 2)  {
-            // push a command to core0
             multicore_fifo_push_blocking(2);
         }
     }
