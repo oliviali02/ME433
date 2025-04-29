@@ -72,9 +72,20 @@ int main() {
         printf("You wrote the command %d\r\n", message);
 
         // push to core1 a command
-        // pop from core1
-        // pirnt the value depending on what you got from pop
+        multicore_fifo_push_blocking(message);
 
+        // pop from core1
+        uint32_t g = multicore_fifo_pop_blocking();
+
+        // print the value depending on what you got from pop
+        if (g == 0) {
+            float voltage = (float) (data_10/4095.0) * 3.3;
+            printf("The voltage is %.2f volts\r\n", voltage);
+        } else if (g == 1) {
+            pico_set_led(true);
+        } else if (g == 2) {
+            pico_set_led(false);
+        }
         
         tight_loop_contents(); // for core0 to stay on
     }
@@ -110,35 +121,29 @@ void pico_set_led(bool led_on) {
 
 void core1_entry() {
 
-    // multicore_fifo_push_blocking(FLAG_VALUE); // write back to core0
-
-    // uint32_t g = multicore_fifo_pop_blocking(); // read from core0
-
-    // if (g != FLAG_VALUE)
-    //     printf("Hmm, that's not right on core 1!\n");
-    // else
-    //     printf("Its all gone well on core 1!\r\n");
-
     while (1) {
         tight_loop_contents(); // for core1 to stay on
-
-
-    
 
         // pop from core 0
         uint32_t g = multicore_fifo_pop_blocking();
 
         if (g == 0) {
             // read the ADC value
-            
-            // put ADC value into data_10
+            uint16_t result = adc_read();
 
+            // put ADC value into data_10
+            data_10 = (int) result;
+    
             // push a command to core0
-            multicore_fifo_push_blocking(data_10);
+            multicore_fifo_push_blocking(0);
+
         } else if (g == 1) {
+            // push a command to core0
+            multicore_fifo_push_blocking(1);
 
         } else if (g == 2)  {
-
+            // push a command to core0
+            multicore_fifo_push_blocking(2);
         }
     }
 }
