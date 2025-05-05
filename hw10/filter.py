@@ -37,8 +37,8 @@ def plotfft(t1, d1, t2, d2):
     ax1.plot(t1,d1,'k', t2, d2, 'r')
     ax1.set_xlabel('Time')
     ax1.set_ylabel('Amplitude')
-    # ax1.set_title('Signal A: A = 0.9 and B = 0.1')
-    ax1.set_title('Signal D: Averaging Over 25 Data Points')
+    ax1.set_title('Signal D: A = 0.9 and B = 0.1')
+    # ax1.set_title('Signal D: Averaging Over 25 Data Points')
     ax2.loglog(frq1, abs(Y1),'k', frq2, abs(Y2),'r') # plotting the fft
     ax2.set_xlabel('Freq (Hz)')
     ax2.set_ylabel('|Y(freq)|')
@@ -106,6 +106,15 @@ tB, dataB = importData('sigB.csv')
 tC, dataC = importData('sigC.csv')
 tD, dataD = importData('sigD.csv')
 
+# maf(50, tA, dataA)
+# maf(100, tB, dataB)
+# maf(50, tC, dataC)
+# maf(25, tD, dataD)
+
 # iir(0.9, 0.1, tA, dataA)
-maf(25, tD, dataD)
+# iir(0.95, 0.05, tB, dataB)
+# iir(0.5, 0.5, tC, dataC)
+iir(0.9, 0.1, tD, dataD)
+
+
 
