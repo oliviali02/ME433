@@ -29,7 +29,7 @@ def takefft(t, data):
 
     return frq, Y
 
-def plotfft(t1, d1, t2, d2):
+def computefft(t1, d1, t2, d2):
     frq1, Y1 = takefft(t1, d1)
     frq2, Y2 = takefft(t2, d2)
 
@@ -37,9 +37,23 @@ def plotfft(t1, d1, t2, d2):
     ax1.plot(t1,d1,'k', t2, d2, 'r')
     ax1.set_xlabel('Time')
     ax1.set_ylabel('Amplitude')
-    ax1.set_title('Signal D: A = 0.9 and B = 0.1')
+    # ax1.set_title('Signal D: A = 0.9 and B = 0.1')
     # ax1.set_title('Signal D: Averaging Over 25 Data Points')
     ax2.loglog(frq1, abs(Y1),'k', frq2, abs(Y2),'r') # plotting the fft
+    ax2.set_xlabel('Freq (Hz)')
+    ax2.set_ylabel('|Y(freq)|')
+    plt.show()
+
+def plotfft(t, d, signalName):
+    frq, Y = takefft(t, d)
+
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+    ax1.plot(t,d,'k')
+    ax1.set_xlabel('Time')
+    ax1.set_ylabel('Amplitude')
+    ax1.set_title(f'Signal {signalName}')
+    # ax1.set_title('Signal D: Averaging Over 25 Data Points')
+    ax2.loglog(frq, abs(Y),'k') # plotting the fft
     ax2.set_xlabel('Freq (Hz)')
     ax2.set_ylabel('|Y(freq)|')
     plt.show()
@@ -59,13 +73,6 @@ def importData(filename):
 
     return t, data
 
-def plotData(t, data):
-    plt.plot(t,data,'b-*')
-    plt.xlabel('Time [s]')
-    plt.ylabel('Signal')
-    plt.title('Signal vs Time')
-    plt.show()
-
 # moving average filter
 def maf(mafNum, t, data):
     mafA = []
@@ -78,7 +85,7 @@ def maf(mafNum, t, data):
         mafA.append(avg)
         mafT.append(t[i])
     
-    plotfft(t, data, mafT, mafA)
+    computefft(t, data, mafT, mafA)
 
 
 
@@ -96,7 +103,7 @@ def iir(A, B, t, data):
         iirA.append(avg[i])
         iirT.append(t[i])
 
-    plotfft(t, data, iirT, iirA)
+    computefft(t, data, iirT, iirA)
 
 # fir 
 
@@ -106,6 +113,11 @@ tB, dataB = importData('sigB.csv')
 tC, dataC = importData('sigC.csv')
 tD, dataD = importData('sigD.csv')
 
+# plotfft(tA, dataA, 'A')
+# plotfft(tB, dataB, 'B')
+# plotfft(tC, dataC, 'C')
+# plotfft(tD, dataD, 'D')
+
 # maf(50, tA, dataA)
 # maf(100, tB, dataB)
 # maf(50, tC, dataC)
@@ -114,7 +126,7 @@ tD, dataD = importData('sigD.csv')
 # iir(0.9, 0.1, tA, dataA)
 # iir(0.95, 0.05, tB, dataB)
 # iir(0.5, 0.5, tC, dataC)
-iir(0.9, 0.1, tD, dataD)
+# iir(0.9, 0.1, tD, dataD)
 
 
 
