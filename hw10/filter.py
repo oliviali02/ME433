@@ -37,6 +37,7 @@ def plotfft(t1, d1, t2, d2):
     ax1.plot(t1,d1,'k', t2, d2, 'r')
     ax1.set_xlabel('Time')
     ax1.set_ylabel('Amplitude')
+    ax1.set_title("Signal D: Averaging 75 Points")
     ax2.loglog(frq1, abs(Y1),'k', frq2, abs(Y2),'r') # plotting the fft
     ax2.set_xlabel('Freq (Hz)')
     ax2.set_ylabel('|Y(freq)|')
@@ -65,7 +66,7 @@ def plotData(t, data):
     plt.show()
 
 # moving average filter
-def movingAverage(mafNum, t, data):
+def maf(mafNum, t, data):
     mafA = []
     mafT = []
     avg = 0
@@ -81,6 +82,13 @@ def movingAverage(mafNum, t, data):
 
 
 # iir
+def iir(A, B, t, data):
+    iirA = []
+    iirT = []
+    avg = np.zeros(len(data))
+
+    for i in range(len(data)):
+        avg 
 
 # fir 
 
@@ -93,5 +101,5 @@ tD, dataD = importData('sigD.csv')
 # plotData(tA, dataA)
 # print(computeSampleRate(tA))
 
-# movingAverage(750, tA, dataA)
-movingAverage(75, tD, dataD)
+# maf(100, tC, dataC)
+maf(75, tD, dataD)
