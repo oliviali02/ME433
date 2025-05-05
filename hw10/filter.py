@@ -6,6 +6,42 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt 
 
+def computeSampleRate(t_arr):
+    sr = int(len(t_arr) / (t_arr[-1] - t_arr[0]))
+    return sr
+
+def takefft(t, data):
+    Fs = computeSampleRate(t)
+    dt = 1/Fs 
+    print("dt = ", dt)
+
+    Ts = 1/Fs; # sampling interval
+    ts = np.arange(0,t[-1],Ts) # time vector
+
+    y = data # the data to make the fft from
+    n = len(y) # length of the signal
+    k = np.arange(n)
+    T = n/Fs
+    frq = k/T # two sides frequency range
+    frq = frq[range(int(n/2))] # one side frequency range
+    Y = np.fft.fft(y)/n # fft computing and normalization
+    Y = Y[range(int(n/2))]
+
+    return frq, Y
+
+def plotfft(t1, d1, t2, d2):
+    frq1, Y1 = takefft(t1, d1)
+    frq2, Y2 = takefft(t2, d2)
+
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+    ax1.plot(t1,d1,'k', t2, d2, 'r')
+    ax1.set_xlabel('Time')
+    ax1.set_ylabel('Amplitude')
+    ax2.loglog(frq1, abs(Y1),'k', frq2, abs(Y2),'r') # plotting the fft
+    ax2.set_xlabel('Freq (Hz)')
+    ax2.set_ylabel('|Y(freq)|')
+    plt.show()
+
 # importing the data
 def importData(filename):
     t = [] # column 0
@@ -20,9 +56,6 @@ def importData(filename):
             data.append(float(row[1])) # second column
 
     return t, data
-    # for i in range(len(t)):
-    #     # print the data to verify it was read
-    #     print(str(t[i]) + ", " + str(data[i]))
 
 def plotData(t, data):
     plt.plot(t,data,'b-*')
@@ -32,14 +65,20 @@ def plotData(t, data):
     plt.show()
 
 # moving average filter
-def maf(mafnum, t, d):
+def movingAverage(mafNum, t, data):
     mafA = []
-    mafTA = []
+    mafT = []
     avg = 0
-    
-    for i in range(mafnum, len(d)):
+
+    for i in range(mafNum, len(data)):
         # sum previous points
-        avg = sum(d[i - mafnum: i])/mafnum
+        avg = sum(data[i - mafNum : i])/mafNum
+        mafA.append(avg)
+        mafT.append(t[i])
+    
+    plotfft(t, data, mafT, mafA)
+
+
 
 # iir
 
@@ -51,4 +90,8 @@ tB, dataB = importData('sigB.csv')
 tC, dataC = importData('sigC.csv')
 tD, dataD = importData('sigD.csv')
 
-plotData(tA, dataA)
+# plotData(tA, dataA)
+# print(computeSampleRate(tA))
+
+# movingAverage(750, tA, dataA)
+movingAverage(75, tD, dataD)
