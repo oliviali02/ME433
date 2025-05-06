@@ -88,7 +88,6 @@ def maf(mafNum, t, data):
     computefft(t, data, mafT, mafA)
 
 
-
 # iir
 def iir(A, B, t, data):
     if ((A+B) != 1):
@@ -105,7 +104,40 @@ def iir(A, B, t, data):
 
     computefft(t, data, iirT, iirA)
 
+def plotfir(t, data, firT, firA, sigName, num, filter, cutoff, bandwidth):
+    frq1, Y1 = takefft(t, data)
+    frq2, Y2 = takefft(firT, firA)
+
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+    ax1.plot(t,data,'k', firT, firA, 'r')
+    ax1.set_xlabel('Time')
+    ax1.set_ylabel('Amplitude')
+    ax1.set_title(f'Signal {sigName}: {filter} filter with {num} weights, cutoff frequency of {cutoff} Hz, and bandwidth of {bandwidth}')
+    ax2.loglog(frq1, abs(Y1),'k', frq2, abs(Y2),'r') # plotting the fft
+    ax2.set_xlabel('Freq (Hz)')
+    ax2.set_ylabel('|Y(freq)|')
+    plt.show()
+
 # fir 
+def fir(t, data, num, weights):
+    filter = 'Blackman'
+    cutoff = 4
+    bandwidth = 100
+    sigName = 'D'
+    firA = []
+    firT = []
+    avg = 0
+
+    data_np = np.array(data)
+    weights_np = np.array(weights)
+
+    for i in range(num, len(data)):
+        avg = np.sum(weights_np * data_np[i - num: i])
+        firA.append(avg)
+        firT.append(t[i])
+
+    plotfir(t, data, firT, firA, sigName, num, filter, cutoff, bandwidth)
+
 
 # extract data from csv files to lists     
 tA, dataA = importData('sigA.csv')
@@ -113,6 +145,13 @@ tB, dataB = importData('sigB.csv')
 tC, dataC = importData('sigC.csv')
 tD, dataD = importData('sigD.csv')
 
+# determine sample rates 
+# srA = computeSampleRate(tA) 10000
+# srB = computeSampleRate(tB) 3300
+# srC = computeSampleRate(tC) 2500
+# srD = computeSampleRate(tD) 400
+
+# print(srA, srB, srC, srD)
 # plotfft(tA, dataA, 'A')
 # plotfft(tB, dataB, 'B')
 # plotfft(tC, dataC, 'C')
@@ -127,6 +166,109 @@ tD, dataD = importData('sigD.csv')
 # iir(0.95, 0.05, tB, dataB)
 # iir(0.5, 0.5, tC, dataC)
 # iir(0.9, 0.1, tD, dataD)
+
+
+weightsA = [
+    -0.000000000000000002,
+    0.002116428440784334,
+    0.009696733412607869,
+    0.025297432075007394,
+    0.050278944029643752,
+    0.082419424191264606,
+    0.115301681223568278,
+    0.140165553138591248,
+    0.149447606977064856,
+    0.140165553138591248,
+    0.115301681223568306,
+    0.082419424191264676,
+    0.050278944029643780,
+    0.025297432075007384,
+    0.009696733412607881,
+    0.002116428440784338,
+    -0.000000000000000002,
+]
+numA = 17
+
+# fir(tA, dataA, numA, weightsA)
+
+weightsB = h = [
+    -0.000000000000000001,
+    0.000282970589546487,
+    0.001204877787865870,
+    0.002941370083944624,
+    0.005726606005070869,
+    0.009797711077828329,
+    0.015326522879102166,
+    0.022352296249991133,
+    0.030729748201279557,
+    0.040104674753698104,
+    0.049924704168249935,
+    0.059486405988859063,
+    0.068013147274924704,
+    0.074752090746301278,
+    0.079074740770195606,
+    0.080564266846284163,
+    0.079074740770195606,
+    0.074752090746301264,
+    0.068013147274924718,
+    0.059486405988859098,
+    0.049924704168249963,
+    0.040104674753698111,
+    0.030729748201279598,
+    0.022352296249991150,
+    0.015326522879102172,
+    0.009797711077828329,
+    0.005726606005070864,
+    0.002941370083944625,
+    0.001204877787865866,
+    0.000282970589546489,
+    -0.000000000000000001,
+]
+numB = 31
+# fir(tB, dataB, numB, weightsB)
+
+weightsC = [
+    -0.000000000000000003,
+    0.005246839840133090,
+    0.025492605815363854,
+    0.067118762410120408,
+    0.124959158144569399,
+    0.177631837132627146,
+    0.199101593314371939,
+    0.177631837132627146,
+    0.124959158144569468,
+    0.067118762410120450,
+    0.025492605815363854,
+    0.005246839840133108,
+    -0.000000000000000003,
+]
+numC = 13
+# fir(tC, dataC, numC, weightsC)
+
+weightsD = [
+    -0.000000000000000002,
+    0.001457826841675081,
+    0.006549295164930914,
+    0.016882484264206098,
+    0.033750668331437424,
+    0.056803882125556170,
+    0.083290418346488163,
+    0.108358278141449257,
+    0.126410562133999788,
+    0.132993169300514108,
+    0.126410562133999788,
+    0.108358278141449299,
+    0.083290418346488204,
+    0.056803882125556170,
+    0.033750668331437444,
+    0.016882484264206136,
+    0.006549295164930921,
+    0.001457826841675083,
+    -0.000000000000000002,
+]
+numD = 19
+# fir(tD, dataD, numD, weightsD)
+
 
 
 
