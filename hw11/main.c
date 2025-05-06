@@ -32,6 +32,8 @@
 
 #include "usb_descriptors.h"
 
+#include "hardware/gpio.h"
+
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF PROTYPES
 //--------------------------------------------------------------------+
@@ -47,6 +49,12 @@ enum  {
   BLINK_SUSPENDED = 2500,
 };
 
+#define UP_PIN 12
+#define LEFT_PIN 13
+#define DOWN_PIN 14
+#define RIGHT_PIN 17
+#define MODE_PIN 16
+
 static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
 
 void led_blinking_task(void);
@@ -54,16 +62,39 @@ void hid_task(void);
 
 /*------------- MAIN -------------*/
 int main(void)
-{
+{ 
+  // set up pins and LEDs
   board_init();
 
-  // init device stack on configured roothub port
+  // init device stack on configured roothub port 
+  // sets up endpoint 0
   tud_init(BOARD_TUD_RHPORT);
 
+  // the board setting itself up for USB communication
   if (board_init_after_tusb) {
     board_init_after_tusb();
   }
 
+  // initialize all the buttons
+  gpio_init(UP_PIN); 
+  gpio_init(LEFT_PIN); 
+  gpio_init(DOWN_PIN); 
+  gpio_init(RIGHT_PIN); 
+  gpio_init(MODE_PIN); 
+
+  gpio_set_dir(UP_PIN, GPIO_IN);
+  gpio_set_dir(LEFT_PIN, GPIO_IN);
+  gpio_set_dir(DOWN_PIN, GPIO_IN);
+  gpio_set_dir(RIGHT_PIN, GPIO_IN);
+  gpio_set_dir(MODE_PIN, GPIO_IN);
+
+  gpio_pull_up(UP_PIN); // after initializing the pin as input
+  gpio_pull_up(LEFT_PIN);
+  gpio_pull_up(DOWN_PIN);
+  gpio_pull_up(RIGHT_PIN);
+  gpio_pull_up(MODE_PIN);
+
+  
   while (1)
   {
     tud_task(); // tinyusb device task
@@ -136,11 +167,13 @@ static void send_hid_report(uint8_t report_id, uint32_t btn)
     }
     break;
 
-    case REPORT_ID_MOUSE:
+    case REPORT_ID_MOUSE: // TODO: edit this part of code to move the mouse
     {
       int8_t const delta = 5;
 
       // no button, right + down, no scroll, no pan
+        // first delta represent the motion in x
+        // second delta represents the motion in y
       tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, delta, delta, 0, 0);
     }
     break;
@@ -220,7 +253,7 @@ void hid_task(void)
   }else
   {
     // Send the 1st of report chain, the rest will be sent by tud_hid_report_complete_cb()
-    send_hid_report(REPORT_ID_KEYBOARD, btn);
+    send_hid_report(REPORT_ID_MOUSE, btn);
   }
 }
 
