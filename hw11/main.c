@@ -171,20 +171,26 @@ static void send_hid_report(uint8_t report_id, uint32_t btn)
     {
       int8_t deltax = 0;
       int8_t deltay = 0;
-      if (!gpio_get(UP_PIN)) {
+
+      bool up_pressed = !gpio_get(UP_PIN);
+      bool down_pressed = !gpio_get(DOWN_PIN);
+      bool left_pressed = !gpio_get(LEFT_PIN);
+      bool right_pressed = !gpio_get(RIGHT_PIN);
+
+      if (up_pressed && !down_pressed) {
         deltay = -1;
-      } 
-
-      if (!gpio_get(DOWN_PIN)) {
+      } else if (!up_pressed && down_pressed) {
         deltay = 1;
+      } else {
+        deltay = 0;
       }
 
-      if (!gpio_get(RIGHT_PIN)) {
-        deltax = 1;
-      }
-      
-      if (!gpio_get(LEFT_PIN)) {
+      if (left_pressed && !right_pressed) {
         deltax = -1;
+      } else if (!left_pressed && right_pressed) {
+        deltax = 1;
+      } else {
+        deltax = 0;
       }
 
       // no button, right + down, no scroll, no pan
