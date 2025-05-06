@@ -56,6 +56,10 @@ enum  {
 #define MODE_PIN 17
 
 static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
+static volatile int up_duration = 0;
+static volatile int down_duration = 0;
+static volatile int left_duration = 0;
+static volatile int right_duration = 0;
 
 void led_blinking_task(void);
 void hid_task(void);
@@ -177,19 +181,33 @@ static void send_hid_report(uint8_t report_id, uint32_t btn)
       bool left_pressed = !gpio_get(LEFT_PIN);
       bool right_pressed = !gpio_get(RIGHT_PIN);
 
+      
+
       if (up_pressed && !down_pressed) {
-        deltay = -1;
+        up_duration++;
+        down_duration = 0;
+        deltay = -up_duration;
       } else if (!up_pressed && down_pressed) {
-        deltay = 1;
+        down_duration++;
+        up_duration = 0;
+        deltay = down_duration;
       } else {
+        up_duration = 0;
+        down_duration = 0;
         deltay = 0;
       }
 
       if (left_pressed && !right_pressed) {
-        deltax = -1;
+        left_duration++;
+        right_duration = 0;
+        deltax = -left_duration;
       } else if (!left_pressed && right_pressed) {
-        deltax = 1;
+        right_duration++;
+        left_duration = 0;
+        deltax = right_duration;
       } else {
+        left_duration = 0;
+        right_duration = 0;
         deltax = 0;
       }
 
