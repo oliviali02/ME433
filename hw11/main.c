@@ -52,8 +52,8 @@ enum  {
 #define UP_PIN 12
 #define LEFT_PIN 13
 #define DOWN_PIN 14
-#define RIGHT_PIN 17
-#define MODE_PIN 16
+#define RIGHT_PIN 16
+#define MODE_PIN 17
 
 static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
 
@@ -88,13 +88,13 @@ int main(void)
   gpio_set_dir(RIGHT_PIN, GPIO_IN);
   gpio_set_dir(MODE_PIN, GPIO_IN);
 
-  gpio_pull_up(UP_PIN); // after initializing the pin as input
+  // initialize internal pull up resistors 
+  gpio_pull_up(UP_PIN); 
   gpio_pull_up(LEFT_PIN);
   gpio_pull_up(DOWN_PIN);
   gpio_pull_up(RIGHT_PIN);
   gpio_pull_up(MODE_PIN);
 
-  
   while (1)
   {
     tud_task(); // tinyusb device task
@@ -169,12 +169,28 @@ static void send_hid_report(uint8_t report_id, uint32_t btn)
 
     case REPORT_ID_MOUSE: // TODO: edit this part of code to move the mouse
     {
-      int8_t const delta = 5;
+      int8_t deltax = 0;
+      int8_t deltay = 0;
+      if (!gpio_get(UP_PIN)) {
+        deltay = -1;
+      } 
+
+      if (!gpio_get(DOWN_PIN)) {
+        deltay = 1;
+      }
+
+      if (!gpio_get(RIGHT_PIN)) {
+        deltax = 1;
+      }
+      
+      if (!gpio_get(LEFT_PIN)) {
+        deltax = -1;
+      }
 
       // no button, right + down, no scroll, no pan
         // first delta represent the motion in x
         // second delta represents the motion in y
-      tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, delta, delta, 0, 0);
+      tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, deltax, deltay, 0, 0);
     }
     break;
 
