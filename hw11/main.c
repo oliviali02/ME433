@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include "bsp/board_api.h"
 #include "tusb.h"
@@ -60,6 +61,9 @@ static volatile int up_duration = 0;
 static volatile int down_duration = 0;
 static volatile int left_duration = 0;
 static volatile int right_duration = 0;
+static volatile float theta = 0.0;
+static int radius = 5;
+
 
 void led_blinking_task(void);
 void hid_task(void);
@@ -176,39 +180,45 @@ static void send_hid_report(uint8_t report_id, uint32_t btn)
       int8_t deltax = 0;
       int8_t deltay = 0;
 
+
       bool up_pressed = !gpio_get(UP_PIN);
       bool down_pressed = !gpio_get(DOWN_PIN);
       bool left_pressed = !gpio_get(LEFT_PIN);
       bool right_pressed = !gpio_get(RIGHT_PIN);
-
+      bool mode_pressed = !gpio_get(MODE_PIN);
       
-
-      if (up_pressed && !down_pressed) {
-        up_duration++;
-        down_duration = 0;
-        deltay = -up_duration;
-      } else if (!up_pressed && down_pressed) {
-        down_duration++;
-        up_duration = 0;
-        deltay = down_duration;
+      if (mode_pressed) {
+        deltax = radius * cos(theta);
+        deltay = radius * sin(theta);
+        theta += 0.05;
       } else {
-        up_duration = 0;
-        down_duration = 0;
-        deltay = 0;
-      }
+        if (up_pressed && !down_pressed) {
+          up_duration++;
+          down_duration = 0;
+          deltay = -up_duration;
+        } else if (!up_pressed && down_pressed) {
+          down_duration++;
+          up_duration = 0;
+          deltay = down_duration;
+        } else {
+          up_duration = 0;
+          down_duration = 0;
+          deltay = 0;
+        }
 
-      if (left_pressed && !right_pressed) {
-        left_duration++;
-        right_duration = 0;
-        deltax = -left_duration;
-      } else if (!left_pressed && right_pressed) {
-        right_duration++;
-        left_duration = 0;
-        deltax = right_duration;
-      } else {
-        left_duration = 0;
-        right_duration = 0;
-        deltax = 0;
+        if (left_pressed && !right_pressed) {
+          left_duration++;
+          right_duration = 0;
+          deltax = -left_duration;
+        } else if (!left_pressed && right_pressed) {
+          right_duration++;
+          left_duration = 0;
+          deltax = right_duration;
+        } else {
+          left_duration = 0;
+          right_duration = 0;
+          deltax = 0;
+        }
       }
 
       // no button, right + down, no scroll, no pan
