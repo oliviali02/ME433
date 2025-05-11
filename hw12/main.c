@@ -52,7 +52,7 @@ static volatile uint32_t hsCount = 0;
 static volatile uint32_t vsCount = 0;
 #define IMAGESIZEX 80
 #define IMAGESIZEY 60
-static volatile uint8_t cameraData[IMAGESIZEX*IMAGESIZEY*2]; // every pixel has 2 bytes
+static volatile uint8_t cameraData[IMAGESIZEX*IMAGESIZEY*2];
 
 typedef struct cameraImage{
     uint32_t index;
@@ -60,7 +60,6 @@ typedef struct cameraImage{
     uint8_t g[IMAGESIZEX*IMAGESIZEY];
     uint8_t b[IMAGESIZEX*IMAGESIZEY];
 } cameraImage_t;
-
 static volatile struct cameraImage picture;
 // I2C functions
 void OV7670_write_register(uint8_t reg, uint8_t value);
@@ -101,11 +100,11 @@ void gpio_callback(uint gpio, uint32_t events) {
             if(startImage){
                 if(startCollect){
                     vsCount++;
-                    // read the raw data --> all 32 input pins
+                    // read the raw data
                     uint32_t d = gpio_get_all();
                     cameraData[rawIndex] = d & 0xFF;
                     rawIndex++;
-                    if (rawIndex == IMAGESIZEX*IMAGESIZEY*2){ 
+                    if (rawIndex == IMAGESIZEX*IMAGESIZEY*2){
                         saveImage = 0;
                         startImage = 0;
                         startCollect = 0;
@@ -137,7 +136,7 @@ int main()
         scanf("%s",m);
         setSaveImage(1);
         while(getSaveImage()==1){}
-        // printf("HS count = %d PixelCount = %d\n",getHSCount(), getPixelCount());
+        //printf("HS count = %d PixelCount = %d\n",getHSCount(), getPixelCount());
         convertImage();
         printImage();
     }
@@ -186,9 +185,9 @@ void init_camera_pins(){
     gpio_pull_up(I2C_SDA);
     gpio_pull_up(I2C_SCL);
     
-    printf("Start init camera\n");
+    // printf("Start init camera\n");
     init_camera();
-    printf("End init camera\n");
+    // printf("End init camera\n");
 
     // interrupts
     gpio_init(VS); // vertical sync
@@ -209,7 +208,7 @@ void init_camera_pins(){
 
 // init the camera with RST and I2C commands
 void init_camera(){
-    // hardware reset the camera --> clear all registers
+    // hardware reset the camera
     gpio_put(RST, 0);
     sleep_ms(1);
     gpio_put(RST, 1);
@@ -223,7 +222,7 @@ void init_camera(){
     OV7670_write_register(OV7670_REG_CLKRC, 1); // div 1
     OV7670_write_register(OV7670_REG_DBLV, 0); // no pll
 
-    // set colorspace to RGB565 -> telling camera to switch to RGB mode
+    // set colorspace to RGB565
     int i = 0;
     for(i=0; i<3; i++){
         OV7670_write_register(OV7670_rgb[i][0],OV7670_rgb[i][1]);
@@ -304,10 +303,10 @@ void init_camera(){
     sleep_ms(300);
 
     uint8_t p = OV7670_read_register(OV7670_REG_PID);
-    printf("pid = %d\n",p);
+    // printf("pid = %d\n",p);
 
     uint8_t v = OV7670_read_register(OV7670_REG_VER);
-    printf("pid = %d\n",v);
+    // printf("pid = %d\n",v);
 }
 
 // Selects one of the camera's test patterns (or disable).
@@ -376,7 +375,6 @@ void convertImage(){
     int i = 0;
     for(i=0;i<IMAGESIZEX*IMAGESIZEY*2;i=i+2){
         
-        // bit shifting from 565 to regular RGB
         picture.r[picture.index] = cameraData[i]>>3;
         picture.g[picture.index] = ((cameraData[i]&0b111)<<3) | cameraData[i+1]>>5;
         picture.b[picture.index] = cameraData[i+1]&0b11111;
