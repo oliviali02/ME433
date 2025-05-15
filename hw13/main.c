@@ -4,11 +4,11 @@
 #include "mpu.h"
 
 // I2C defines
-// This example will use I2C0 on GPIO8 (SDA) and GPIO9 (SCL) running at 400KHz.
+// This example will use I2C1 on GPIO8 (SDA) and GPIO9 (SCL) running at 400KHz.
 // Pins can be changed, see the GPIO function select table in the datasheet for information on GPIO assignments
-#define I2C_PORT i2c0
-#define I2C_SDA 8
-#define I2C_SCL 9
+#define I2C_PORT i2c1
+#define I2C_SDA 18
+#define I2C_SCL 19
 
 #define ADDR 0x68
 
@@ -36,14 +36,15 @@ int main()
     gpio_pull_up(I2C_SCL);
     // For more examples of I2C use see https://github.com/raspberrypi/pico-examples/tree/master/i2c
 
-
     writeConfig(PWR_MGMT_1, 0x00); // turn on MPU
-    writeConfig(ACCEL_CONFIG, 0b00000000); // enable accelerometer 
-    writeConfig(GYRO_CONFIG, 0b00011000); // enable gyroscope
+    writeConfig(ACCEL_CONFIG, 0b00000111); // enable accelerometer 
+    writeConfig(GYRO_CONFIG, 0b00011111); // enable gyroscope
 
     while (true) {
-        printf("Hello, world!\n");
-        sleep_ms(1000);
+        IMU_Data cur_vals = readData(ACCEL_XOUT_H);
+        printf("x: %.2f, y: %.2f, z: %.2f\r\n", cur_vals.ax, cur_vals.ay, cur_vals.az);
+        sleep_ms(100);
+        
     }
 }
 
@@ -59,8 +60,8 @@ void writeConfig(unsigned char reg, unsigned char value) {
 
 }
 
-float shiftData(uint8_t val1, uint8_t val2) {
-    return (val1 << 8) | val2;
+float shiftData(uint8_t high, uint8_t low) {
+    return (int16_t) ((high << 8) | low);
 }
 
 // should have a buffer that can read all the values at once
@@ -72,15 +73,15 @@ IMU_Data readData(unsigned char reg) {
     i2c_read_blocking(I2C_PORT, ADDR, buff, len, false);  // false - finished with bus
 
     IMU_Data values;
-    values.ax = shiftData(buff[0], buff[1]);
-    values.ay = shiftData(buff[2], buff[3]);
-    values.az = shiftData(buff[4], buff[5]);
+    values.ax = shiftData(buff[0], buff[1]) * 0.000061;
+    values.ay = shiftData(buff[2], buff[3]) * 0.000061;
+    values.az = shiftData(buff[4], buff[5]) * 0.000061;
 
-    values.gx = shiftData(buff[6], buff[7]);
-    values.gy = shiftData(buff[8], buff[9]);
-    values.gz = shiftData(buff[10], buff[11]);
+    values.temp = (shiftData(buff[6], buff[7])/340.00) + 36.53;
 
-    values.temp = shiftData(buff[12], buff[13]);
+    values.gx = shiftData(buff[8], buff[9]) * 0.007630;
+    values.gy = shiftData(buff[10], buff[11]) * 0.007630;
+    values.gz = shiftData(buff[12], buff[13]) * 0.007630;
 
     return values;
 }
