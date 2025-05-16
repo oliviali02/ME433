@@ -35,7 +35,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(hw13 main.c )
+add_executable(hw13 main.c ssd1306.c)
 
 pico_set_program_name(hw13 "hw13")
 pico_set_program_version(hw13 "0.1")
@@ -56,7 +56,7 @@ target_include_directories(hw13 PRIVATE
 # Add any user requested libraries
 target_link_libraries(hw13 
         hardware_i2c
-        )
+        hardware_adc)
 
 pico_add_extra_outputs(hw13)
 
