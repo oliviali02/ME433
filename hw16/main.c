@@ -55,14 +55,11 @@ void increment_pwm(char sign) {
     printf("level = %d\r\n", level);
     pwm_set_gpio_level(ENABLE, level);
 
-    if (duty_cycle > 0.0) {
+    if (duty_cycle > 0) {
         gpio_put(PHASE, 0);
     } else if (duty_cycle < 0 ) {
         gpio_put(PHASE, 1);
-    } else if (duty_cycle == 0) {
-        pwm_set_enabled(pwm_gpio_to_slice_num(ENABLE), false);
     }
-    printf("The duty cycle is %d. \r\n", duty_cycle);
 }
 int main()
 {
