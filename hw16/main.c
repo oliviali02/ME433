@@ -8,7 +8,7 @@
 #define ENABLE 20
 #define PHASE 21 
 
-static uint16_t wrap = 50000;
+static uint16_t wrap = 1000;
 static volatile signed int duty_cycle = 0;
 
 void motor_init() {
@@ -23,10 +23,9 @@ void motor_init() {
     // initialize PWM to 50 Hz
     uint slice_num = pwm_gpio_to_slice_num(ENABLE); // Get PWM slice number
 
-    float div = 60.0; // must be between 1-255
+    float div = 1.0; // must be between 1-255
     pwm_set_clkdiv(slice_num, div); // divider
 
-    wrap = 50000; // when to rollover, must be less than 65535
     pwm_set_wrap(slice_num, wrap);
 
     pwm_set_enabled(slice_num, true); // turn on the PWM
@@ -52,15 +51,19 @@ void increment_pwm(char sign) {
     }
 
     int level = (int)((abs(duty_cycle) / 100.0) * wrap);
-    printf("level = %d\r\n", level);
-    pwm_set_gpio_level(ENABLE, level);
 
     if (duty_cycle > 0) {
         gpio_put(PHASE, 0);
     } else if (duty_cycle < 0 ) {
         gpio_put(PHASE, 1);
+    } else {
+        level = 0;
     }
+
+    pwm_set_gpio_level(ENABLE, level);
+    printf("Duty Cycle = %d\r\n", duty_cycle);
 }
+
 int main()
 {
     stdio_init_all();
